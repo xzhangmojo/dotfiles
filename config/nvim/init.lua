@@ -21,6 +21,7 @@ vim.opt.linebreak = true
 vim.opt.clipboard = "unnamedplus" -- necessary for tmux cp buffer mirror
 vim.opt.cursorline = true
 vim.opt.signcolumn = "yes"
+-- vim.opt.termguicolors = true
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>') -- clear highlight of search
 -- Highlight when yanking (copying) text
 --  Try it with `yap` in normal mode
@@ -34,7 +35,7 @@ vim.api.nvim_create_autocmd('TextYankPost', {
 })
 
 local stl = {
-    '%#ColorColumn#%2f',          -- buffer number
+    '%#StatusLine#%2f',          -- buffer number
     ' ',                          -- separator
     '%<',                         -- truncate here
     '%*»',                        -- separator
@@ -155,8 +156,28 @@ require("lazy").setup({
             "hrsh7th/cmp-nvim-lsp",  -- LSP completion source
         },
         -- Treesitter
-        {'nvim-treesitter/nvim-treesitter', build = ':TSUpdate'},
-        'nvim-treesitter/nvim-treesitter-textobjects',
+        {
+            "nvim-treesitter/nvim-treesitter",
+            build = ":TSUpdate",
+            event = { "BufReadPost", "BufNewFile" }, -- make sure it actually loads
+            config = function()
+                require("nvim-treesitter.configs").setup({
+                    ensure_installed = { "c", "lua", "vim", "vimdoc", "query" },
+                    auto_install = true,
+
+                    highlight = {
+                        enable = true,
+                        additional_vim_regex_highlighting = false, -- IMPORTANT: stop Vim C syntax from taking over
+                    },
+
+                    indent = { enable = true },
+                })
+            end,
+        },
+        {
+            "nvim-treesitter/nvim-treesitter-textobjects",
+            dependencies = { "nvim-treesitter/nvim-treesitter" },
+        },
         {
             "nvim-telescope/telescope.nvim",
             dependencies = { "nvim-lua/plenary.nvim" }
@@ -246,6 +267,7 @@ require("mason").setup()
 require("mason-lspconfig").setup({
     ensure_installed = { "lua_ls", "pyright"}, -- Replace with needed LSPs
     automatic_installation = true,
+    automatic_enable = {},
 })
 
 require("ccls").setup()
@@ -270,6 +292,7 @@ local on_attach = function(client, bufnr)
     local fzf = require("fzf-lua")
 
     vim.keymap.set("n", "<Space>s", function() fzf.lsp_document_symbols() end, { noremap = true, silent = true, desc = "Symbols" })
+    vim.keymap.set("n", "<Space>S", function() fzf.lsp_live_workspace_symbols() end, { noremap = true, silent = true, desc = "All Symbols" })
     vim.keymap.set("n", "gr", function() fzf.lsp_references() end, { noremap = true, silent = true, desc = "References" })
     vim.keymap.set("n", "gd", function() fzf.lsp_definitions() end, { noremap = true, silent = true, desc = "Definitions"})
     vim.keymap.set("n", "gi", function() fzf.lsp_implementations() end, { noremap = true, silent = true, desc = "Impl"})
@@ -395,8 +418,8 @@ require'marks'.setup {
   cyclic = true,
   -- whether the shada file is updated after modifying uppercase marks. default false
   force_write_shada = false,
-  -- how often (in ms) to redraw signs/recompute mark positions. 
-  -- higher values will have better performance but may cause visual lag, 
+  -- how often (in ms) to redraw signs/recompute mark positions.
+  -- higher values will have better performance but may cause visual lag,
   -- while lower values may cause performance penalties. default 150.
   refresh_interval = 250,
   -- sign priorities for each type of mark - builtin marks, uppercase marks, lowercase
@@ -534,7 +557,7 @@ gitsigns.setup {
       else
         gitsigns.nav_hunk('next')
       end
-    end)
+    end, 'next hunk')
 
     map('n', '[c', function()
       if vim.wo.diff then
@@ -542,7 +565,7 @@ gitsigns.setup {
       else
         gitsigns.nav_hunk('prev')
       end
-    end)
+    end, 'prev hunk')
 
     -- Actions
     map('n', 'ghs', gitsigns.stage_hunk, 'stage_hunk')
@@ -571,7 +594,7 @@ vim.keymap.set("n", "<Space>w", function() fzf.grep_cword() end, { noremap = tru
 vim.keymap.set("n", "<Space>g", function() fzf.git_files() end, { noremap = true, silent = true, desc = "Git Files" })
 vim.keymap.set("n", "<Space>t", function() fzf.treesitter() end, { noremap = true, silent = true, desc = "Treesitter" })
 vim.keymap.set("n", "<Space>c", function() fzf.commands() end, { noremap = true, silent = true, desc = "Commands" })
-vim.keymap.set("n", "<Space>m", function() fzf.marks() end, { noremap = true, silent = true, desc = "Commands" })
+vim.keymap.set("n", "<Space>m", function() fzf.marks() end, { noremap = true, silent = true, desc = "Marks" })
 vim.api.nvim_create_user_command("F", "FzfLua", {})
 
 -- Motion jumps
